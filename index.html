@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수업 입구</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:#0f172a; color:#e2e8f0; min-height:100vh;
+    display:flex; align-items:center; justify-content:center; padding:20px; }
+  main { width:100%; max-width:430px; }
+  h1 { font-size:24px; margin-bottom:8px; text-align:center; }
+  .sub { color:#94a3b8; font-size:13.5px; text-align:center; margin-bottom:24px; line-height:1.6; }
+  .card { display:block; background:#1e293b; border:1px solid #334155; border-radius:14px;
+    padding:18px 20px; margin-bottom:12px; color:#e2e8f0; text-decoration:none; }
+  .card:hover { border-color:#3b82f6; }
+  .card.fresh { border-color:#10b981; }
+  .card b { font-size:17px; display:block; margin-bottom:2px; }
+  .card span { color:#94a3b8; font-size:13px; display:block; margin-bottom:8px; }
+  .card small { color:#94a3b8; font-size:12px; }
+  .card.fresh small { color:#6ee7b7; }
+  #cards { min-height:60px; }
+</style></head>
+<body><main>
+<h1>🎓 수업 입구</h1>
+<p class="sub">이 페이지 주소는 절대 바뀌지 않아요.<br>아래에서 들어갈 곳을 누르면 오늘의 수업 주소로 연결됩니다.</p>
+<div id="cards">불러오는 중...</div>
+</main>
+<script>
+const NAMES = {
+  layer: ["📚 Layer", "학습 시스템 · 온라인 수업 · 숙제"],
+  class: ["🎥 화상 수업", "화상 수업 프로그램 (수업방·화이트보드)"],
+};
+(async () => {
+  const box = document.getElementById("cards");
+  let data = {};
+  try {
+    data = await (await fetch("./url.json?t=" + Date.now(), { cache: "no-store" })).json();
+  } catch (e) {
+    box.textContent = "정보를 불러오지 못했어요. 잠시 후 새로고침 해보세요.";
+    return;
+  }
+  const go = new URLSearchParams(location.search).get("go");
+  if (go && data[go] && data[go].url) { location.replace(data[go].url); return; }
+  box.innerHTML = "";
+  for (const key of ["layer", "class"]) {
+    const d = data[key];
+    if (!d || !d.url) continue;
+    const ts = new Date(d.ts);
+    const fresh = Date.now() - ts.getTime() < 16 * 3600 * 1000;
+    const a = document.createElement("a");
+    a.className = "card" + (fresh ? " fresh" : "");
+    a.href = d.url;
+    const hh = String(ts.getHours()).padStart(2, "0");
+    const mm = String(ts.getMinutes()).padStart(2, "0");
+    a.innerHTML = "<b>" + NAMES[key][0] + "</b><span>" + NAMES[key][1] + "</span>" +
+      "<small>" + (fresh ? "🟢 지금 열려 있어요" : "⚪️ 지금은 꺼져 있을 수 있어요") +
+      " · " + (ts.getMonth() + 1) + "/" + ts.getDate() + " " + hh + ":" + mm + "에 켜짐</small>";
+    box.appendChild(a);
+  }
+  if (!box.children.length) box.textContent = "아직 등록된 수업 주소가 없습니다.";
+})();
+</script></body></html>
